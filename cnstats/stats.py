@@ -41,7 +41,7 @@ def easyquery(code, datestr):
     return r.json()
 
 
-def stats(code, /, *args, ret="print"):
+def stats(code, /, *args, ret_type="print"):
     """
     stats(code, datestr)
     stats(code, start_datestr, end_datestr)
@@ -76,9 +76,9 @@ def stats(code, /, *args, ret="print"):
                     )
     df = pd.DataFrame(data_list, columns=["sj", "zbname", "zb", "data"])
 
-    if ret == "print":
+    if ret_type == "print":
         print(df.to_csv(index=False, header=False))
-    elif ret == "json":
+    elif ret_type == "json":
         return df.set_index(["sj", "zb"])["data"].unstack().to_json(double_precision=2)
-    elif ret == "dataframe":
+    elif ret_type == "dataframe":
         return df
