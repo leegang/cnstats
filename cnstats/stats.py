@@ -1,10 +1,8 @@
 import time
-from os import stat
 
 import pandas as pd
 import requests
-
-from .utils import get_periods
+from retry import retry
 
 header = {
     "Accept-Encoding": "gzip, deflate, br",
@@ -21,18 +19,18 @@ def random_timestamp():
     return str(int(round(time.time() * 1000)))
 
 
-def easyquery(code, datestr):
+def easyquery(code, dbcode, *datestrs):
     url = "https://data.stats.gov.cn/easyquery.htm"
     obj = {
         "m": "QueryData",
-        "dbcode": "hgyd",
+        "dbcode": dbcode,
         "rowcode": "zb",
         "colcode": "sj",
         "wds": "[]",
         "dfwds": '[{"wdcode":"zb","valuecode":"'
         + code
         + '"},{"wdcode":"sj","valuecode":"'
-        + datestr
+        + "-".join(datestrs)
         + '"}]',
         "k1": random_timestamp(),
     }
@@ -41,44 +39,27 @@ def easyquery(code, datestr):
     return r.json()
 
 
-def stats(code, /, *args, ret_type="print"):
-    """
-    stats(code, datestr)
-    stats(code, start_datestr, end_datestr)
-    """
-    if len(args) == 1:
-        periods = (args[0],)
-    elif len(args) == 2:
-        start_datestr = args[0]
-        end_datestr = args[1]
-        periods = get_periods(start_datestr, end_datestr)
-    else:
-        raise TypeError(
-            "stats() takes 2 positional arguments but {} were given".format(
-                len(args) + 1
-            )
+@retry(delay=30, tries=20)
+def stats(code, dbcode, *datestrs):
+    ret = easyquery(code, dbcode, *datestrs)
+    if ret["returncode"] == 200:
+        data_list = []
+        datanodes = ret["returndata"]["datanodes"]
+        wdnodes = ret["returndata"]["wdnodes"]
+        cname_dict = {item["code"]: item["cname"] for item in wdnodes[0]["nodes"]}
+        for i, n in enumerate(datanodes):
+            if n["data"]["hasdata"] == True:
+                data_list.append(
+                    [
+                        n["wds"][1]["valuecode"],
+                        cname_dict[n["wds"][0]["valuecode"]],
+                        n["wds"][0]["valuecode"],
+                        n["data"]["data"],
+                    ]
+                )
+        df = pd.DataFrame(data_list, columns=["sj", "name", "zb", "data"]).sort_values(
+            ["sj", "zb"]
         )
-    data_list = []
-    for datestr in periods:
-        ret = easyquery(code, datestr)
-        if ret["returncode"] == 200:
-            datanodes = ret["returndata"]["datanodes"]
-            wdnodes = ret["returndata"]["wdnodes"]
-            for i, n in enumerate(datanodes):
-                if n["data"]["hasdata"] == True:
-                    data_list.append(
-                        [
-                            n["wds"][1]["valuecode"],
-                            wdnodes[0]["nodes"][i]["cname"],
-                            n["wds"][0]["valuecode"],
-                            n["data"]["data"],
-                        ]
-                    )
-    df = pd.DataFrame(data_list, columns=["sj", "zbname", "zb", "data"])
-
-    if ret_type == "print":
-        print(df.to_csv(index=False, header=False))
-    elif ret_type == "json":
-        return df.set_index(["sj", "zb"])["data"].unstack().to_json(double_precision=2)
-    elif ret_type == "dataframe":
         return df
+    else:
+        return pd.DataFrame()

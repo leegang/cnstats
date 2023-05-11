@@ -1,4 +1,5 @@
 import requests
+from retry import retry
 
 header = {
     "Accept-Encoding": "gzip, deflate, br",
@@ -19,12 +20,10 @@ def easyquery(id="zb", dbcode="hgyd"):
     return r.json()
 
 
+@retry(delay=30, tries=100)
 def get_tree(id="zb", dbcode="hgyd"):
-    for n in easyquery(id):
-        print(n["id"], n["name"])
+    for n in easyquery(id, dbcode):
         if n["isParent"]:
             get_tree(n["id"], dbcode)
-
-
-if __name__ == "__main__":
-    get_tree("zb")
+        else:
+            print(n["id"], n["name"], sep=",")
