@@ -1,5 +1,7 @@
 import requests
 from retry import retry
+import pandas as pd
+import os
 
 header = {
     "Accept-Encoding": "gzip, deflate, br",
@@ -22,8 +24,13 @@ def easyquery(id="zb", dbcode="hgyd"):
 
 @retry(delay=30, tries=100)
 def get_tree(id="zb", dbcode="hgyd"):
+    data_list = []
     for n in easyquery(id, dbcode):
         if n["isParent"]:
             get_tree(n["id"], dbcode)
         else:
             print(n["id"], n["name"], sep=",")
+            data_list.append([n["id"], n["name"]])
+            # print(data_list)
+
+    return data_list

@@ -3,6 +3,8 @@ from .stats import stats
 from .zbcode import get_tree
 from .download import update
 import argparse
+import os
+import pandas as pd
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -22,7 +24,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.tree == "zb":
-        get_tree(args.tree, args.dbcode)
+        data_list = get_tree(args.tree, args.dbcode)
+        df = pd.DataFrame(data_list, columns=["id", "name"])
+        folder_name = args.dbcode
+        if not os.path.exists(folder_name):
+            os.mkdir(folder_name)
+
+        df.to_csv(f"{folder_name}/{folder_name}.csv", index=False, encoding="utf-8")
+
+
     elif args.download:
         update(args.dbcode)
     else:
