@@ -3,12 +3,17 @@
 name: Update Data
 on:
   schedule:
-    - cron: '12 3 * * *'
+    - cron: '15 3 * * *'
   workflow_dispatch:
 jobs:
   update-data:
     runs-on: ubuntu-latest
     steps:
+      - name: Set timezone
+        run: |
+          sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+          echo "Asia/Shanghai" | sudo tee /etc/timezone
+          date
       - uses: actions/checkout@v4
       - name: Set up Python 3.9
         uses: actions/setup-python@v5
