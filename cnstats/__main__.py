@@ -30,7 +30,7 @@ if __name__ == "__main__":
         if not os.path.exists(folder_name):
             os.mkdir(folder_name)
 
-        df.to_csv(f"{folder_name}/{folder_name}.csv", index=False, encoding="utf-8")
+        df.to_csv(f"{folder_name}/code.csv", index=False, encoding="utf-8")
 
 
     elif args.download:
