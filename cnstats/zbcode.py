@@ -27,10 +27,9 @@ def get_tree(id="zb", dbcode="hgyd"):
     data_list = []
     for n in easyquery(id, dbcode):
         if n["isParent"]:
-            get_tree(n["id"], dbcode)
+            data_list.extend(get_tree(n["id"], dbcode))  # 将返回结果合并到data_list中
         else:
             print(n["id"], n["name"], sep=",")
             data_list.append([n["id"], n["name"]])
-            # print(data_list)
 
     return data_list
