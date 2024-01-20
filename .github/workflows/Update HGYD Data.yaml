@@ -1,6 +1,6 @@
 
 # github action to update data
-name: Update HGND Data
+name: Update HGYD Data
 on:
   schedule:
     - cron: '15 5 * * *'
