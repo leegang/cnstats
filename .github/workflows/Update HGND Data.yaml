@@ -1,6 +1,6 @@
 
 # github action to update data
-name: Update Data
+name: Update HGND Data
 on:
   schedule:
     - cron: '15 3 * * *'
@@ -34,17 +34,3 @@ jobs:
           git add .
           git commit -m "update hgnd data"
           git push
-      - name: Cralwer hgyd data 
-        run: |
-            python -m cnstats -t --dbcode hgyd
-            python -m cnstats --download --dbcode hgyd
-      - name: Commit files
-        run: |
-          git add .
-          git commit -m "update data"
-          git push
-
-          
-
-
-        

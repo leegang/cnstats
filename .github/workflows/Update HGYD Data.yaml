@@ -1,0 +1,35 @@
+
+# github action to update data
+name: Update HGND Data
+on:
+  schedule:
+    - cron: '15 5 * * *'
+  workflow_dispatch:
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set timezone
+        run: |
+          sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+          echo "Asia/Shanghai" | sudo tee /etc/timezone
+          date
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.9
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Cralwer hgyd data 
+        run: |
+            python -m cnstats -t --dbcode hgyd
+            python -m cnstats --download --dbcode hgyd
+      - name: Commit files
+        run: |
+          git add .
+          git commit -m "update data"
+          git push
