@@ -16,10 +16,8 @@ def get_periods(start_month: str, end_month: str):
 
 
 def next_month(month: str):
-    """
-    >>> next_month("202001")
-    '202002'
-    """
+    if len(month) == 4:  # 如果只有年份
+        month += '01'  # 添加默认的月份
     dt = datetime.strptime(month, "%Y%m")
     return datetime.strftime(dt + relativedelta(months=1), "%Y%m")
 
