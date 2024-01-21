@@ -1,6 +1,6 @@
 
 # github action to update data
-name: Update HGYD Data
+name: Update HGYD code Data
 on:
   schedule:
     - cron: '15 5 * * *'
