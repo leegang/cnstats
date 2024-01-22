@@ -3,7 +3,7 @@
 name: Update HGYD code Data
 on:
   schedule:
-    - cron: '15 5 * * *'
+    - cron: '15 5 * * 1'
   workflow_dispatch:
 jobs:
   update-data:
@@ -32,5 +32,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "update data"
+          git commit -m "update hgyd code data"
           git push
