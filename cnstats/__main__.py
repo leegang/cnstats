@@ -19,6 +19,13 @@ if __name__ == "__main__":
         nargs="?",
         help="数据库代码",
     )
+    parser.add_argument('-dt',
+                        '--dbtype',
+                        choices=['csv','duckdb'],
+                        default='duckdb',
+                        nargs='?',
+                        help='数据库类型',
+                        )
     parser.add_argument("zbcode", help="指标代码", nargs="?")
     parser.add_argument("date", help="查询日期", nargs="?")
     args = parser.parse_args()
@@ -34,7 +41,7 @@ if __name__ == "__main__":
 
 
     elif args.download:
-        update(args.dbcode)
+        update(args.dbcode,args.dbtype)
     else:
         df = stats(args.zbcode, *args.date)
         if not df.empty:

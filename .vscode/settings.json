@@ -1,0 +1,12 @@
+{
+    "sqltools.connections": [
+        {
+            "name": "macrodata.duckdb",
+            "accessMode": "Read Only",
+            "previewLimit": 50,
+            "driver": "DuckDB",
+            "databaseFilePath": "/Users/leegang/Project/Python/cnstats/data/macrodb.duckdb"
+        }
+    ],
+    "sqltools.useNodeRuntime": true
+}

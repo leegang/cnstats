@@ -1,9 +1,11 @@
 import csv
 import logging
 import os
+import random
 import re
 import time
 from datetime import datetime
+import duckdb
 
 from cnstats.stats import stats
 
@@ -22,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 def update(
     dbcode="hgyd",
+    dbtype="duckdb",
     download_code_csv="code.csv",
     start_datestr="200001",
     end_datestr=LAST_MONTH,
@@ -57,28 +60,72 @@ def update(
                 else end_datestr_tmp
             )
 
-        # 检查文件是否存在
-        filename = os.path.join(folder_name, f"{code.lower()}.csv")
-        if os.path.exists(f"{filename}"):
-            with open(filename, "r", encoding="utf-8") as f:
-                reader = csv.reader(f)
-                last_month_record = list(reader)[-2][0]
-            start_datestr_tmp = next_month(last_month_record)
-
+        # 返回 csv 的最大月份
+        def get_csv_start_datestr_tmp(filename, code):
+            if os.path.exists(filename):
+                with open(filename, "r", encoding="utf-8") as f:
+                    reader = csv.reader(f)
+                    last_month_record = list(reader)[-2][0]
+                    start_datestr_tmp = next_month(last_month_record)
+            else:
+                start_datestr_tmp = start_datestr
+            return start_datestr_tmp
+        
+        # 返回 duckdb 的最大月份
+        def get_duckdb_start_datestr_tmp(code):
+            if os.path.exists("data/macrodb.duckdb"):
+                conn = duckdb.connect("data/macrodb.duckdb")
+                cursor = conn.cursor()
+                sql_text =  f"SELECT max(distinct(time_str)) FROM {dbcode}_data WHERE code like '%{code}%'"
+                logger.info(f"sql_text={sql_text}")
+                cursor.execute(sql_text)
+                last_month_record = cursor.fetchone()[0]
+                conn.close()
+                logger.info(f"last_month_record={last_month_record}")
+                if last_month_record is None:
+                    start_datestr_tmp = start_datestr
+                else:
+                    last_month_record =str(last_month_record)
+                    start_datestr_tmp = next_month(last_month_record)
+            else:
+                start_datestr_tmp = start_datestr
+            return start_datestr_tmp
+            
         # 下载数据
+        
+        if dbtype == "duckdb":
+            start_datestr_tmp = get_duckdb_start_datestr_tmp(code)
+        elif dbtype == "csv":
+            filename = os.path.join(folder_name, f"{code.lower()}.csv")
+            start_datestr_tmp = get_csv_start_datestr_tmp(filename, code)
+        else:
+            raise ValueError(f"dbtype={dbtype}不支持")
+
         if start_datestr_tmp <= end_datestr_tmp:
             logger.info(f"正在下载{code}数据,{start_datestr_tmp}至{end_datestr_tmp}")
             df = stats(code, dbcode, start_datestr_tmp, end_datestr_tmp)
-            if not df.empty:
-                df.to_csv(
-                    filename,
-                    index=False,
-                    header=False,
-                    mode="a",
-                    encoding="utf-8",
-                    float_format="%.2f",
-                )
-                logger.info(f"下载{code}数据成功")
-            else:
-                logger.info(f"{code}没有更新数据")
-                time.sleep(1)
+            if dbtype =='csv':
+                if not df.empty:
+                    df.to_csv(
+                        filename,
+                        index=False,
+                        header=False,
+                        mode="a",
+                        encoding="utf-8",
+                        float_format="%.2f",
+                    )
+                    logger.info(f"下载{code}数据成功")
+                else:
+                    logger.info(f"{code}没有更新数据")
+            elif dbtype =='duckdb':
+                if not df.empty:
+                    conn = duckdb.connect("data/macrodb.duckdb")
+                    conn.register('my_table', df)
+                    # insert the data to duckdb
+                    conn.execute(f'INSERT INTO {dbcode}_data SELECT * FROM my_table')
+                    conn.commit()
+                    conn.close()
+                    logger.info(f"{code}数据入库成功")
+                else:
+                    logger.info(f"{code}没有更新数据")
+    time.sleep(random.randint(1, 3))
