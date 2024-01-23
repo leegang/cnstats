@@ -1,2 +1,0 @@
--- FILEPATH: /Users/leegang/Project/Python/cnstats/cnstats/db_drop
-SELECT DISTINCT * FROM table_name;
