@@ -45,7 +45,7 @@ class DataDownloader:
 
     def update_data(self):
         code_list = self.read_code_list()
-        filename =''
+        filename = ''
         for code, name in code_list:
             start_datestr, end_datestr = self.get_date_range_for_code(name)
             if self.dbtype == "duckdb":
@@ -53,10 +53,11 @@ class DataDownloader:
             elif self.dbtype == "csv":
                 filename = self.get_csv_filename(code)
                 start_datestr = self.get_csv_start_datestr(filename)
-            
             if start_datestr <= end_datestr:
                 self.download_and_store_data(code, start_datestr, end_datestr, filename)
-            time.sleep(random.uniform(1, 3))
+                time.sleep(random.uniform(1, 3))
+        if self.dbtype == "duckdb":
+            self.remove_duplicates()
 
     def get_date_range_for_code(self, name):
         start_datestr, end_datestr = self.start_datestr, self.end_datestr
@@ -81,7 +82,7 @@ class DataDownloader:
         if os.path.exists(DUCKDB_FILE):
             with duckdb.connect(DUCKDB_FILE) as conn:
                 last_month_record = conn.execute(f"SELECT max(time_str) FROM {self.dbcode}_data WHERE code LIKE '%{code}%'").fetchone()[0]
-                return next_month(str(last_month_record)) if last_month_record else self.start_datestr
+                return next_month(str(last_month_record)) if last_month_record and int(last_month_record)> int(self.start_datestr) else self.start_datestr
         return self.start_datestr
 
     def download_and_store_data(self, code, start_datestr, end_datestr, filename=''):
@@ -110,27 +111,29 @@ class DataDownloader:
             conn.register('my_table', df)
             conn.execute(f'INSERT INTO {self.dbcode}_data SELECT * FROM my_table')
             conn.commit()
-            self.remove_duplicates(conn, code)
-            conn.commit()
             conn.close()
             logger.info(f"Data for {code} stored successfully in the database")
 
-    def remove_duplicates(self, conn, code):
+    def remove_duplicates(self):
+        with duckdb.connect(DUCKDB_FILE) as conn:
         # Assuming 'time_str', 'name', 'code', and 'value' uniquely identify a row
-        conn.execute(f'''
-            CREATE OR REPLACE TEMPORARY TABLE {self.dbcode}_data_temp AS
-            SELECT DISTINCT time_str, name, code, value
-            FROM {self.dbcode}_data;
+            conn.execute(f'''
+                CREATE OR REPLACE TEMPORARY TABLE {self.dbcode}_data_temp AS
+                SELECT DISTINCT time_str, name, code, value
+                FROM {self.dbcode}_data;
 
-            DELETE FROM {self.dbcode}_data;
+                DELETE FROM {self.dbcode}_data;
 
-            INSERT INTO {self.dbcode}_data
-            SELECT * FROM {self.dbcode}_data_temp;
+                INSERT INTO {self.dbcode}_data 
+                SELECT * FROM {self.dbcode}_data_temp;
 
-            DROP TABLE {self.dbcode}_data_temp;
-        ''')
+                DROP TABLE {self.dbcode}_data_temp;
+            ''')
+            conn.commit()
+            conn.close()
+            logger.info(f"Duplicate data removed successfully")
 
-def update(dbcode="hgyd", dbtype="duckdb", download_code_csv="code.csv", start_datestr="200001", end_datestr=LAST_MONTH):
+def update(dbcode="hgyd", dbtype="duckdb", download_code_csv="code.csv", start_datestr="202001", end_datestr=LAST_MONTH):
     downloader = DataDownloader(
         dbcode=dbcode,
         dbtype=dbtype,
