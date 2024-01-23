@@ -2,3 +2,5 @@ venv
 dist
 __pycache__
 *.egg-info
+data/macrodb_back.duckdb
+data/macrodb_back.duckdb.wal

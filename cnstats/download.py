@@ -82,7 +82,8 @@ class DataDownloader:
         if os.path.exists(DUCKDB_FILE):
             with duckdb.connect(DUCKDB_FILE) as conn:
                 last_month_record = conn.execute(f"SELECT max(time_str) FROM {self.dbcode}_data WHERE code LIKE '%{code}%'").fetchone()[0]
-                return next_month(str(last_month_record)) if last_month_record and int(last_month_record)> int(self.start_datestr) else self.start_datestr
+                conn.close()
+            return next_month(str(last_month_record)) if last_month_record and int(last_month_record)> int(self.start_datestr) else self.start_datestr
         return self.start_datestr
 
     def download_and_store_data(self, code, start_datestr, end_datestr, filename=''):
