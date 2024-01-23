@@ -26,7 +26,7 @@ jobs:
       - name: Cralwer hgnd data 
         run: |
             python -m cnstats -t --dbcode hgnd
-            python -m cnstats --download --dbcode hgnd
+            python -m cnstats --download --dbcode hgnd --dbtype duckdb
       - name: Commit hgnd files
         run: |
           git config --global user.name "github-actions[bot]"
