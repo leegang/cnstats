@@ -2,9 +2,12 @@
 # github action to update data
 name: Update HGYD code Data
 on:
-  schedule:
-    - cron: '15 5 * * 1'
-  workflow_dispatch:
+  # when the previous workflow is completed
+  workflow_run:
+    workflows: ["Update HGND Data"]
+    branches: [main]
+    types:
+      - completed
 jobs:
   update-data:
     runs-on: ubuntu-latest
